@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comedy Remedy Meme Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;600&family=Space+Grotesk:wght@500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1edcd;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: #ffc701;
+            font-family: 'Space Grotesk', sans-serif;
+            margin-bottom: 30px;
+            font-size: 48px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        button {
+            background-color: #ffc701;
+            border: none;
+            padding: 18px 40px;
+            font-size: 20px;
+            font-weight: 600;
+            color: #fff;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0px 12px 24px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-4px);
+            box-shadow: 0px 16px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .meme-container {
+            display: none;
+            margin-top: 40px;
+            width: 90%;
+            max-width: 650px;
+            text-align: center;
+            padding: 20px;
+            border-radius: 15px;
+            background-color: #fff;
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .meme-container img {
+            width: 100%;
+            height: auto;
+            max-height: 400px;
+            object-fit: contain;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .meme-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 28px;
+            color: #333;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            border: 8px solid #f3f3f3; /* Light grey */
+            border-top: 8px solid #ffc701; /* Yellow */
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 2s linear infinite;
+            margin: 30px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Confetti Canvas */
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 999;
+            pointer-events: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Comedy Remedy Meme Generator</h1>
+    <button onclick="generateMeme()">Generate Meme</button>
+
+    <!-- Loading Spinner -->
+    <div id="loading" class="loading-spinner" style="display: none;"></div>
+
+    <!-- Meme container -->
+    <div class="meme-container" id="meme-container">
+        <img id="meme-image" src="" alt="Meme">
+        <div id="meme-text" class="meme-text">Loading...</div>
+    </div>
+
+    <!-- Canvas for confetti -->
+    <canvas id="confettiCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('confettiCanvas');
+        const ctx = canvas.getContext('2d');
+        let confetti = [];
+        let animationRunning = false;
+        let confettiTimeout;
+
+        // Resizing canvas to cover entire viewport
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Confetti Class
+        class Confetti {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height - canvas.height;
+                this.size = Math.random() * 8 + 4;
+                this.speed = Math.random() * 3 + 1;
+                this.angle = Math.random() * Math.PI * 2;
+                this.color = `hsl(${Math.random() * 360}, 100%, 70%)`;
+            }
+
+            fall() {
+                this.x += Math.sin(this.angle) * this.speed;
+                this.y += Math.cos(this.angle) * this.speed;
+                this.size *= 0.99;
+                if (this.size < 0.1) {
+                    this.size = Math.random() * 8 + 4;
+                    this.x = Math.random() * canvas.width;
+                    this.y = -10;
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+            }
+        }
+
+        function generateMeme() {
+            // Show loading spinner
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('meme-container').style.display = 'none';  // Hide meme container
+
+            // Play sound immediately when the button is clicked
+            playSoundEffect();
+
+            // Fetch meme data from an API
+            fetch('https://api.imgflip.com/get_memes')
+                .then(response => response.json())
+                .then(data => {
+                    const meme = data.data.memes[Math.floor(Math.random() * data.data.memes.length)];
+
+                    // Hide loading spinner and show meme
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('meme-container').style.display = 'block';
+
+                    // Set meme image and text
+                    const memeImage = document.getElementById('meme-image');
+                    memeImage.src = meme.url;
+                    memeImage.alt = meme.name;
+
+                    const memeText = document.getElementById('meme-text');
+                    memeText.innerHTML = "😂 Check this out!";  // Update with fun text!
+
+                    // Trigger confetti animation
+                    triggerConfetti();
+                })
+                .catch(error => console.error('Error fetching meme:', error));
+        }
+
+        // Confetti animation
+        function triggerConfetti() {
+            if (animationRunning) return; // Don't start new animation if already running
+
+            animationRunning = true;
+            for (let i = 0; i < 200; i++) {
+                confetti.push(new Confetti());
+            }
+            animateConfetti();
+
+            // Stop after 5 seconds
+            confettiTimeout = setTimeout(() => {
+                stopConfetti();
+            }, 5000); // Stop after 5 seconds
+        }
+
+        function animateConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            confetti.forEach((c) => {
+                c.fall();
+                c.draw();
+            });
+            if (animationRunning) {
+                requestAnimationFrame(animateConfetti);
+            }
+        }
+
+        function stopConfetti() {
+            animationRunning = false;
+            confetti = []; // Clear all confetti particles
+        }
+
+        // Sound effect
+        function playSoundEffect() {
+            const audio = new Audio('https://www.soundjay.com/button/beep-07.wav');
+            audio.play().catch((e) => {
+                console.error("Error playing sound:", e);
+            });
+        }
+    </script>
+
+</body>
+</html>
